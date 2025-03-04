@@ -1,5 +1,4 @@
 from typing import Optional
-
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -12,5 +11,5 @@ class Users(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     username: Mapped[str]
     password: Mapped[str]
-    jwt: Mapped[str]
+    jwt: Mapped[Optional[str]] = mapped_column(nullable=True)
     referral_code: Mapped[Optional[str]] = mapped_column(nullable=True)

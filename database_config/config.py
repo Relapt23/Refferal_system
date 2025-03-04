@@ -1,13 +1,13 @@
 import os
+from pydantic import BaseModel
 
-from dotenv import load_dotenv
 
-load_dotenv()
+class DBConfig(BaseModel):
+    host: str = os.getenv("DB_HOST")
+    port: str = os.getenv("DB_PORT")
+    user: str = os.getenv("POSTGRES_USER")
+    password: str = os.getenv("POSTGRES_PASSWORD")
+    database: str = os.getenv("POSTGRES_DB")
 
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT"),
-    "user": os.getenv("POSTGRES_USER"),
-    "password": os.getenv("POSTGRES_PASSWORD"),
-    "database": os.getenv("POSTGRES_DB"),
-}
+
+db_config = DBConfig()

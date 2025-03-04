@@ -1,10 +1,9 @@
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
-from database_config.config import DB_CONFIG
+from database_config.config import db_config
 from database_config.models import Base
 
 engine = create_async_engine(
-    f"postgresql+asyncpg://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}",
+    f"postgresql+asyncpg://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.database}",
     echo=True)
 sess = async_sessionmaker(engine)
 
