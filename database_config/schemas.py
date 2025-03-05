@@ -3,12 +3,12 @@ from pydantic import BaseModel, EmailStr
 
 
 class Login(BaseModel):
-    username: EmailStr
+    email: EmailStr
     password: str
 
 
 class SignUp(BaseModel):
-    username: EmailStr
+    email: EmailStr
     password: str
 
 

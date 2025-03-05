@@ -9,7 +9,6 @@ class Base(DeclarativeBase):
 class Users(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    username: Mapped[str]
+    email: Mapped[str]
     password: Mapped[str]
-    jwt: Mapped[Optional[str]] = mapped_column(nullable=True)
     referral_code: Mapped[Optional[str]] = mapped_column(nullable=True)
