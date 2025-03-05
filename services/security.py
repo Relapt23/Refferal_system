@@ -9,7 +9,6 @@ from database_config.db import get_session
 from typing_extensions import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
