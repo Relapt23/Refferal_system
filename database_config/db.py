@@ -3,7 +3,7 @@ from database_config.config import db_config
 from database_config.models import Base
 
 engine = create_async_engine(
-    f"postgresql+asyncpg://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.database}",
+    f"postgresql+asyncpg://{db_config.USER}:{db_config.PASSWORD}@{db_config.HOST}:{db_config.PORT}/{db_config.DATABASE}",
     echo=True)
 sess = async_sessionmaker(engine)
 
