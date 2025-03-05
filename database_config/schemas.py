@@ -1,14 +1,14 @@
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class Login(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 
 class SignUp(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 
