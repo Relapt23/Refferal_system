@@ -3,6 +3,8 @@ import base64
 import requests
 import os
 
+from pydantic import EmailStr
+
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
 
 
@@ -12,7 +14,7 @@ def generate_referral_code():
     return code.upper()
 
 
-async def get_hunter_info(email: str) -> dict:
+async def get_hunter_info(email: EmailStr) -> dict:
     url = f"https://api.hunter.io/v2/email-verifier?email={email}&api_key={HUNTER_API_KEY}"
     response = requests.get(url)
 
