@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database_config.db import get_session
 from database_config.models import Users, InvitedUsers
 from database_config.schemas import SignUp, CustomException, Login
-from services.security import pwd_context, make_jwt_token, get_current_user
-from services.referral_services import generate_referral_code
+from referral_services.security import pwd_context, make_jwt_token, get_current_user
+from referral_services.services import generate_referral_code, get_hunter_info
 
 router = APIRouter()
 
@@ -25,8 +25,8 @@ async def sign_up(user: SignUp, session: AsyncSession = Depends(get_session)):
         referrer = query2.scalar_one_or_none()
         if referrer is None:
             raise CustomException(detail="invalid_referral_code", status_code=400)
-
-    new_user = Users(email=user.email, password=hashed_password)
+    hunter_data = await get_hunter_info(user.email)
+    new_user = Users(email=user.email, password=hashed_password, hunter_info=hunter_data)
     session.add(new_user)
     await session.commit()
 
@@ -90,13 +90,17 @@ async def get_info(id: int, session: AsyncSession = Depends(get_session)):
         raise CustomException(detail="user_not_found", status_code=404)
 
     invited_users_query = await session.execute(
-        select(Users.email, Users.referral_code)
+        select(Users.email, Users.referral_code, Users.hunter_info)
         .join(InvitedUsers, Users.email == InvitedUsers.registered_user)
         .where(InvitedUsers.referral_code == user.referral_code)
     )
     invited_users = [
-        {"email": email, "referral_code": referral_code}
-        for email, referral_code in invited_users_query.all()
+        {
+            "email": email,
+            "referral_code": referral_code,
+            "hunter_data": hunter_info
+        }
+        for email, referral_code, hunter_info in invited_users_query.all()
     ]
 
     return {

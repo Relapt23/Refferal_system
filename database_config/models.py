@@ -1,6 +1,7 @@
-from typing import Optional, List
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from typing import Optional
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import ForeignKey
+from sqlalchemy import JSON
 
 
 class Base(DeclarativeBase):
@@ -13,6 +14,7 @@ class Users(Base):
     email: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str]
     referral_code: Mapped[Optional[str]] = mapped_column(nullable=True)
+    hunter_info: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
 class InvitedUsers(Base):

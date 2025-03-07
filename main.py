@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from services import endpoints
+from referral_services import endpoints
 from database_config.db import init_db
 
 
