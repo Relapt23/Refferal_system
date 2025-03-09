@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 class Login(BaseModel):
@@ -10,6 +11,7 @@ class Login(BaseModel):
 class SignUp(BaseModel):
     email: EmailStr
     password: str
+    referral_code: Optional[str] = None
 
 
 class CustomException(HTTPException):

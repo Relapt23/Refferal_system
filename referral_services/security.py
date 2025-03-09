@@ -27,7 +27,7 @@ def get_user_from_jwt_token(jwt_token: str):
         payload = jwt.decode(jwt_token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload.get("sub")
     except:
-        return CustomException(detail="Ошибка получения JWT", status_code=400)
+        return CustomException(detail="error_getting_token", status_code=400)
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
@@ -36,5 +36,5 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
     query = await session.execute(select(Users).where(Users.email == email))
     user = query.scalar_one_or_none()
     if not user:
-        raise CustomException(detail="Пользователь с таким именем не найден", status_code=404)
+        raise CustomException(detail="user_not_found", status_code=404)
     return user

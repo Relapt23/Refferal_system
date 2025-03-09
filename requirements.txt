@@ -3,7 +3,8 @@ uvicorn
 pydantic
 sqlalchemy
 asyncpg
-python-dotenv
 passlib
 PyJWT
 pydantic[email]
+redis
+requests
