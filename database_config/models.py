@@ -21,4 +21,4 @@ class InvitedUsers(Base):
     __tablename__ = "invited_users"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     referral_code: Mapped[Optional[str]] = mapped_column(nullable=True)
-    registered_user: Mapped[str] = mapped_column(ForeignKey("users.email"), nullable=True)
+    registered_user_email: Mapped[str] = mapped_column(ForeignKey("users.email"), nullable=True)
