@@ -2,7 +2,7 @@ import os
 from pydantic import BaseModel
 
 
-class DB_Config(BaseModel):
+class DBConfig(BaseModel):
     HOST: str = os.getenv("DB_HOST")
     PORT: str = os.getenv("DB_PORT")
     USER: str = os.getenv("POSTGRES_USER")
@@ -10,4 +10,4 @@ class DB_Config(BaseModel):
     DATABASE: str = os.getenv("POSTGRES_DB")
 
 
-db_config = DB_Config()
+db_config = DBConfig()
