@@ -12,7 +12,7 @@ class Users(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(unique=True)
-    password: Mapped[str]
+    password_hash: Mapped[str]
     hunter_info: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
