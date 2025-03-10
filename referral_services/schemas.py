@@ -4,18 +4,18 @@ from typing import Optional
 from datetime import datetime
 
 
-class Login(BaseModel):
+class LoginParams(BaseModel):
     email: EmailStr
     password: str
 
 
-class SignUp(BaseModel):
+class SignUpParams(BaseModel):
     email: EmailStr
     password: str
     referral_code: Optional[str] = None
 
 
-class CreateEndDateParams(BaseModel):
+class CreateReferralCodeParams(BaseModel):
     end_date: datetime
 
 

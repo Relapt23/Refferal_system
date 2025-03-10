@@ -1,8 +1,8 @@
-import uuid
 import base64
-import requests
 import os
+import uuid
 
+import requests
 from pydantic import EmailStr
 
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
@@ -11,6 +11,7 @@ HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
 def generate_referral_code():
     uid = uuid.uuid4()
     code = base64.urlsafe_b64encode(uid.bytes).decode("utf-8")[:10]
+
     return code.upper()
 
 

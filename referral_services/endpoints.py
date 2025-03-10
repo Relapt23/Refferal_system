@@ -1,40 +1,46 @@
+import json
+from datetime import datetime
 from typing import Optional
 
+import redis.asyncio as redis
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from database_config.db import get_session
 from database_config.models import Users, InvitedUsers, ReferralCodes
-from database_config.schemas import SignUp, CustomException, Login, CreateEndDateParams
+from referral_services.redis import get_redis
+from referral_services.schemas import CustomException, CreateReferralCodeParams
+from referral_services.schemas import SignUpParams, LoginParams
 from referral_services.security import pwd_context, make_jwt_token, get_current_user
 from referral_services.services import generate_referral_code, get_hunter_info
-from referral_services.redis import get_redis
-import redis.asyncio as redis
-from datetime import datetime
-import json
 
 router = APIRouter()
 
 
 @router.post("/sign_up")
-async def sign_up(sign_up_params: SignUp, session: AsyncSession = Depends(get_session)):
-    query = await session.execute(select(Users).where(Users.email == sign_up_params.email))
+async def sign_up(params: SignUpParams, session: AsyncSession = Depends(get_session)):
+    query = await session.execute(
+        select(Users)
+        .where(Users.email == params.email)
+    )
     get_user = query.scalar_one_or_none()
 
     if get_user:
         raise CustomException(detail="existing_user", status_code=400)
 
-    hashed_password = pwd_context.hash(sign_up_params.password)
+    hashed_password = pwd_context.hash(params.password)
 
     referrer_id: Optional[int] = None
 
-    if sign_up_params.referral_code:
+    if params.referral_code:
         query = await session.execute(
             select(ReferralCodes)
-            .where(ReferralCodes.referral_code == sign_up_params.referral_code)
+            .where(ReferralCodes.referral_code == params.referral_code)
             .order_by(ReferralCodes.id.desc())
         )
         referral_code = query.scalar_one_or_none()
+
         if referral_code is None:
             raise CustomException(detail="invalid_referral_code", status_code=400)
         if referral_code.end_date.timestamp() < datetime.now().timestamp():
@@ -42,14 +48,14 @@ async def sign_up(sign_up_params: SignUp, session: AsyncSession = Depends(get_se
 
         referrer_id = referral_code.referrer_id
 
-    hunter_data = await get_hunter_info(sign_up_params.email)
-    new_user = Users(email=sign_up_params.email, password=hashed_password, hunter_info=hunter_data)
+    hunter_data = await get_hunter_info(params.email)
+    new_user = Users(email=params.email, password_hash=hashed_password, hunter_info=hunter_data)
     session.add(new_user)
     await session.commit()
 
     if referrer_id:
-        referral_entry = InvitedUsers(referral_code=sign_up_params.referral_code,
-                                      registered_user_email=sign_up_params.email,
+        referral_entry = InvitedUsers(referral_code=params.referral_code,
+                                      registered_user_email=params.email,
                                       referrer_id=referrer_id)
         session.add(referral_entry)
 
@@ -59,21 +65,24 @@ async def sign_up(sign_up_params: SignUp, session: AsyncSession = Depends(get_se
 
 
 @router.post("/login")
-async def login(user: Login, session: AsyncSession = Depends(get_session)):
-    query = await session.execute(select(Users).where(Users.email == user.email))
+async def login(params: LoginParams, session: AsyncSession = Depends(get_session)):
+    query = await session.execute(
+        select(Users)
+        .where(Users.email == params.email)
+    )
     result = query.scalar_one_or_none()
 
     if not result:
         raise CustomException(detail="user_not_found", status_code=404)
-    if not pwd_context.verify(user.password, result.password):
+    if not pwd_context.verify(params.password, result.password_hash):
         raise CustomException(detail="incorrect_name_or_password", status_code=400)
 
-    token = make_jwt_token(user.email)
+    token = make_jwt_token(params.email)
     return {"access_token": token, "token_type": "bearer"}
 
 
 @router.post("/referral_code")
-async def create_referral_code(params: CreateEndDateParams,
+async def create_referral_code(params: CreateReferralCodeParams,
                                user: Users = Depends(get_current_user),
                                session: AsyncSession = Depends(get_session)):
     email = user.email
@@ -98,20 +107,24 @@ async def create_referral_code(params: CreateEndDateParams,
 async def delete_referral_code(user: Users = Depends(get_current_user),
                                session: AsyncSession = Depends(get_session),
                                redis_client: redis.Redis = Depends(get_redis)):
-    email = user.email
     query = await session.execute(
-        select(ReferralCodes).where(ReferralCodes.referrer_id == user.id).order_by(ReferralCodes.id.desc()))
+        select(ReferralCodes)
+        .where(ReferralCodes.referrer_id == user.id)
+        .order_by(ReferralCodes.id.desc())
+    )
     referral_code = query.scalar()
+
     if not referral_code:
         raise CustomException(detail="referral_code_not_found", status_code=404)
-    referral_code.is_deleted = True
-    print(referral_code.referral_code)
 
-    referral_code_in_cache = await redis_client.get(email)
+    referral_code.is_deleted = True
+
+    referral_code_in_cache = await redis_client.get(user.email)
     if referral_code_in_cache:
         referral_code_in_cache = json.loads(referral_code_in_cache)
         if referral_code.referral_code == referral_code_in_cache["code"]:
-            await redis_client.delete(email)
+            await redis_client.delete(user.email)
+
     await session.commit()
     return {"message": "Successfully deleted"}
 
@@ -126,7 +139,10 @@ async def get_referral_code(email: str, session: AsyncSession = Depends(get_sess
             raise CustomException(detail="active_referral_code_not_found", status_code=404)
         return {"message": "Referral code from cache", "referral_code": cached_dict["code"]}
 
-    user_query = await session.execute(select(Users).where(Users.email == email))
+    user_query = await session.execute(
+        select(Users)
+        .where(Users.email == email)
+    )
     user = user_query.scalar_one_or_none()
 
     if not user:
@@ -143,6 +159,7 @@ async def get_referral_code(email: str, session: AsyncSession = Depends(get_sess
         raise CustomException(detail="active_referral_code_not_found", status_code=404)
     if referral_code.is_deleted:
         raise CustomException(detail="referral_code_is_deleted", status_code=400)
+
     await redis_client.set(
         email,
         json.dumps({"code": referral_code.referral_code, "end_date": referral_code.end_date.timestamp()}),
@@ -154,7 +171,10 @@ async def get_referral_code(email: str, session: AsyncSession = Depends(get_sess
 
 @router.get("/user_info/{user_id}")
 async def get_info(user_id: int, session: AsyncSession = Depends(get_session)):
-    query = await session.execute(select(Users).where(Users.id == user_id))
+    query = await session.execute(
+        select(Users)
+        .where(Users.id == user_id)
+    )
     user = query.scalar_one_or_none()
 
     if not user:
@@ -175,8 +195,9 @@ async def get_info(user_id: int, session: AsyncSession = Depends(get_session)):
     ]
 
     user_referral_code_query = await session.execute(
-        select(ReferralCodes.referral_code).where(ReferralCodes.referrer_id == user_id).order_by(
-            ReferralCodes.id.desc())
+        select(ReferralCodes.referral_code)
+        .where(ReferralCodes.referrer_id == user_id)
+        .order_by(ReferralCodes.id.desc())
     )
     user_referral_code = user_referral_code_query.scalar()
     if not user_referral_code:
